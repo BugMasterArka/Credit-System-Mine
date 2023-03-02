@@ -48,6 +48,7 @@ router.post('/addstudent',[
 
         const savedStudent = await studop.saveStudent(regn_no,name,secWallet,balance,phone,secPass,secPin,serial_id);
 
+        console.log(savedStudent);
         let data = {
             user:{
                 serial_id:serial_id
@@ -103,5 +104,35 @@ router.post('/login',[
             res.status(500).send("internal server error");
         }
 });
+
+// addition of credits by student 
+// POST "/api/student/addcreds"
+// login reqd
+router.put('/addcreds/:regn_no',fetchuser,[
+    body('credits').isNumeric()
+    ],
+    async (req,res)=>{
+        // if errors are there return bad request and errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        try{
+            let fetchedStudent = await studop.findStudent(req.params.regn_no);
+            if(fetchedStudent.length==0){
+                return res.status(400).json({error: "Invalid Credentials"});
+            }
+            if(fetchedStudent[0].serial_id!==req.user.serial_id){
+                return res.status(400).json({error: "Not Allowed"});
+            }
+    
+            let updatedStudent = await studop.addCredits(req.params.regn_no,req.user.serial_id,req.body.credits);
+    
+            res.json({success:"success",status:updatedStudent});
+        }catch(error){
+            console.error(error.message);
+            res.status(500).send("internal server error");
+        }
+    });
 
 module.exports = router;

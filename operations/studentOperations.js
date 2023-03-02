@@ -7,16 +7,15 @@ exports.findStudent = async (regn_no)=>{
         con.query(sql,(err,result)=>{
             if(err) reject(err);
             if(result.length!=0){console.log('Value Found!');}
-            console.log(result);
+            // console.log(result);
             resolve(result);
         });
     });
     return await dbOper;
-}
+};
 
 // save details of a student to the table
 exports.saveStudent = async (regn_no,name,wallet_id,balance,phone,password,pin,serial_id)=>{
-    console.log(wallet_id.length);
     let dbOper = new Promise((resolve,reject)=>{
         let sql = `INSERT INTO student VALUES(?,?,?,?,?,?,?,?);`;
         let values = [regn_no,name,wallet_id,balance,phone,password,pin,serial_id];
@@ -24,6 +23,19 @@ exports.saveStudent = async (regn_no,name,wallet_id,balance,phone,password,pin,s
             if(err) reject(err);
             console.log('Student Values Inserted');
             // let student = this.findStudent(regn_no);
+            resolve(result);
+        });
+    });
+    return await dbOper;
+};
+
+// add credits to student account
+exports.addCredits = async (regn_no,serial_id,credits)=>{
+    let dbOper = new Promise((resolve,reject)=>{
+        let sql = `UPDATE student SET balance=balance+? WHERE regn_no=? AND serial_id=?;`;
+        let values = [credits,regn_no,serial_id];
+        con.query(sql,values,(err,result)=>{
+            if(err) reject(err);
             resolve(result);
         });
     });
