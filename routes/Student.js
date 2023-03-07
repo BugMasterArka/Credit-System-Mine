@@ -13,11 +13,11 @@ const  JWT_SECRET = 'mYJWT$ECrEt';
 // using POST "/api/student/addstudent"
 // no login required
 router.post('/addstudent',[
-    body('regn_no').exists().isLength({min: 9,max: 9}),
-    body('name').exists().isLength({min: 3}),
-    body('phone').isLength({min: 10,max: 11}),
-    body('password').exists().isLength({min: 5}),
-    body('pin').exists().isLength({min: 6,max: 6})
+    body('regn_no','Enter a valid VITAP Registration Number').exists().isLength({min: 9,max: 9}),
+    body('name','Name must have greater than 3 letters').exists().isLength({min: 3}),
+    body('phone','Must be a 10 or 11 diggit phone number').isLength({min: 10,max: 11}),
+    body('password','Must have a minimum length of 5').exists().isLength({min: 5}),
+    body('pin','Must be a 6 digit pin').exists().isLength({min: 6,max: 6})
 ],async (req,res)=>{
 
     // if errors are there return bad request and errors
@@ -27,11 +27,8 @@ router.post('/addstudent',[
     }
     try{
         const {regn_no,name,phone,password,pin}=req.body;
-        // const student = studop.findStudent(regn_no);
-        const student = await studop.findStudent(regn_no);
-        // student.then((value)=>{
 
-        // });
+        const student = await studop.findStudentReg(regn_no);
         console.log(student.length)
         if(student.length!=0){
             return res.status(400).json({status:"Unable",message:"A student with this ID already exists"});
@@ -69,8 +66,8 @@ router.post('/addstudent',[
 // using POST "/api/student/login"
 // no login reqd
 router.post('/login',[
-    body('regn_no').exists().isLength({min: 9, max: 9}),
-    body('password').exists()
+    body('regn_no','Enter a valid VITAP Registration Number').exists().isLength({min: 9, max: 9}),
+    body('password','Enter a valid password').exists()
     ],async (req,res)=>{
         // if errors are there return bad request and errors
         const errors = validationResult(req);
@@ -81,7 +78,7 @@ router.post('/login',[
         try{
             const {regn_no,password} = req.body;
 
-            const student = await studop.findStudent(regn_no);
+            const student = await studop.findStudentLog(regn_no);
             if(student.length==0){
                 return res.status(400).json({error: "Invalid Credentials"});
             }
@@ -109,7 +106,7 @@ router.post('/login',[
 // POST "/api/student/addcreds"
 // login reqd
 router.put('/addcreds/:regn_no',fetchuser,[
-    body('credits').isNumeric()
+    body('credits','Must be a numeric value').isNumeric()
     ],
     async (req,res)=>{
         // if errors are there return bad request and errors
@@ -118,7 +115,7 @@ router.put('/addcreds/:regn_no',fetchuser,[
             return res.status(400).json({ errors: errors.array() });
         }
         try{
-            let fetchedStudent = await studop.findStudent(req.params.regn_no);
+            let fetchedStudent = await studop.findStudentLog(req.params.regn_no);
             if(fetchedStudent.length==0){
                 return res.status(400).json({error: "Invalid Credentials"});
             }
@@ -134,5 +131,31 @@ router.put('/addcreds/:regn_no',fetchuser,[
             res.status(500).send("internal server error");
         }
     });
+
+// fetch credits for student account
+// using POST "/api/student/fetchcreds"
+// login reqd
+router.post('/fetchcreds/:regn_no',fetchuser,
+    async (req,res)=>{
+        try {
+            let fetchedStudent = await studop.fetchBalanceAuth(req.params.regn_no);
+            if(fetchedStudent.length==0){
+                return res.status(400).json({error:"Invalid Credentials"});
+            }
+            if(fetchedStudent[0].serial_id!==req.user.serial_id){
+                return res.status(400).json({error:"Invalid Credentials"});
+            }
+            let fetchedBalance = await studop.fetchBalance(req.user.serial_id);
+            res.json({balance:fetchedBalance[0].balance});
+        } catch (error) {
+            console.error(error.message);
+            res.status(500).send("internal server error");
+        }
+    });
+
+
+//deduct amount from student
+// using 
+
 
 module.exports = router;
