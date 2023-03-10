@@ -61,3 +61,16 @@ exports.addAmt = async (credits,retailer_id)=>{
     });
     return await dbOper;
 };
+
+// deducting from retailer on transaction rollback
+exports.deductAmtRollback = async (credits,retailer_id)=>{
+    let dbOper = new Promise((resolve,reject)=>{
+        let sql = `UPDATE retailer SET balance=balance-? WHERE retailer_id=?`;
+        let values = [credits,retailer_id];
+        con.query(sql,values,(err)=>{
+            if(err) resolve(false);
+            else resolve(true);
+        });
+    });
+    return await dbOper;
+};

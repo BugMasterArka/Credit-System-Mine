@@ -58,6 +58,19 @@ exports.addCredits = async (regn_no,serial_id,credits)=>{
     return await dbOper;
 };
 
+// add credits to student account on rollback of transaction
+exports.addCreditsRollback = async (regn_no,credits)=>{
+    let dbOper = new Promise((resolve,reject)=>{
+        let sql = `UPDATE student SET balance=balance+? WHERE regn_no=?;`;
+        let values = [credits,regn_no];
+        con.query(sql,values,(err,result)=>{
+            if(err) resolve(false);
+            resolve(true);
+        });
+    });
+    return await dbOper;
+};
+
 // fetch the balance in a students account
 exports.fetchBalance = async (serial_id)=>{
     let dbOper = new Promise((resolve, reject)=>{
@@ -84,13 +97,33 @@ exports.fetchBalanceAuth = async (regn_no)=>{
 
 // deduct amount from student account
 exports.deductAmt = async (credits,regn_no)=>{
-    let dbOper = new Promise((resolve,reject)=>{
-        let sql = `UPDATE student SET balance=balance-? WHERE regn_no=?`;
-        let values = [credits,regn_no];
-        con.query(sql,values,(err,result)=>{
-            if(err) reject(err);
-            resolve(result);
+    let originalAmount = await this.getBalance(regn_no);
+    if(originalAmount===-1) return false;
+    if(credits<=originalAmount){
+        let dbOper = new Promise((resolve,reject)=>{
+            let sql = `UPDATE student SET balance=balance-? WHERE regn_no=?`;
+            let values = [credits,regn_no];
+            con.query(sql,values,(err)=>{
+                if(err) resolve(false);
+                else resolve(true);
+            });
+        });
+        return await dbOper;
+    }else{
+        return false;
+    }
+};
+
+
+
+exports.getBalance = async (regn_no)=>{
+    let dbOper = new Promise((resolve, reject)=>{
+        let sql = `SELECT balance FROM student WHERE regn_no=?`;
+        con.query(sql,regn_no,(err,result)=>{
+            if(err) reject(-1);
+            let amt = result[0].balance;
+            resolve(amt);
         });
     });
     return await dbOper;
-};
+}
